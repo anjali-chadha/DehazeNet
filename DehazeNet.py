@@ -12,22 +12,25 @@ def EditFcnProto(templateFile, height, width):
 			fd.write(template.format(height_15=height+15, width_15=width+15,
 				height_11=height+11, width_11=width+11))
 
-def TransmissionEstimate(im_path, height, width):
-	caffe.set_mode_gpu()
+def initial_setup():
+    caffe.set_mode_gpu()
     caffe.set_device(1)
-	net = caffe.Net('DehazeNet.prototxt', 'DehazeNet.caffemodel', caffe.TEST)
-	net_full_conv = caffe.Net('DehazeNetFcn.prototxt', 'DehazeNet.caffemodel', caffe.TEST)
-	net_full_conv.params['ip1-conv'][0].data.flat = net.params['ip1'][0].data.flat
-	net_full_conv.params['ip1-conv'][1].data[...] = net.params['ip1'][1].data
-	im = caffe.io.load_image(im_path)
-	npad = ((7,8), (7,8), (0,0))
-	im = np.pad(im, npad, 'symmetric')
-	transformers = caffe.io.Transformer({'data': net_full_conv.blobs['data'].data.shape})
-	transformers.set_transpose('data', (2,0,1))
-	transformers.set_channel_swap('data', (2,1,0))
-	out = net_full_conv.forward_all(data=np.array([transformers.preprocess('data', im-0.2)]))
-	transmission = np.reshape(out['ip1-conv'], (height,width))
-	return transmission
+    net = caffe.Net('DehazeNet.prototxt', 'DehazeNet.caffemodel', caffe.TEST)
+    net_full_conv = caffe.Net('DehazeNetFcn.prototxt', 'DehazeNet.caffemodel', caffe.TEST)
+    net_full_conv.params['ip1-conv'][0].data.flat = net.params['ip1'][0].data.flat
+    net_full_conv.params['ip1-conv'][1].data[...] = net.params['ip1'][1].data
+    npad = ((7,8), (7,8), (0,0))
+    transformers = caffe.io.Transformer({'data': net_full_conv.blobs['data'].data.shape})
+    transformers.set_transpose('data', (2,0,1))
+    transformers.set_channel_swap('data', (2,1,0))
+    return npad, net_full_conv, transformers 
+    
+def TransmissionEstimate(npad, net_full_conv, transformers, im_path, height, width):
+    im = caffe.io.load_image(im_path)
+    im = np.pad(im, npad, 'symmetric')
+    out = net_full_conv.forward_all(data=np.array([transformers.preprocess('data', im-0.2)]))
+    transmission = np.reshape(out['ip1-conv'], (height,width))
+    return transmission
 
 def DarkChannel(im,sz):
 	b,g,r = cv2.split(im)
