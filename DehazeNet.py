@@ -88,6 +88,8 @@ if __name__ == '__main__':
 		exit()
 	else:
 		im_path = sys.argv[1]
+    
+    npad, net_full_conv, transformers = initial_setup()
 	src = cv2.imread(im_path)
 	height = src.shape[0]
 	width = src.shape[1]
@@ -96,7 +98,7 @@ if __name__ == '__main__':
 	I = src/255.0
 	dark = DarkChannel(I,15)
 	A = AtmLight(I,dark)
-	te = TransmissionEstimate(im_path, height, width)
+	te = TransmissionEstimate(npad, net_full_conv, transformers, im_path, height, width)
 	t = TransmissionRefine(src,te)
 	J = Recover(I,t,A,0.1)
 	cv2.imshow('TransmissionEstimate',te)
