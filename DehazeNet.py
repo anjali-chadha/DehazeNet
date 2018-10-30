@@ -13,7 +13,8 @@ def EditFcnProto(templateFile, height, width):
 				height_11=height+11, width_11=width+11))
 
 def TransmissionEstimate(im_path, height, width):
-	caffe.set_mode_cpu()
+	caffe.set_mode_gpu()
+    caffe.set_device(1)
 	net = caffe.Net('DehazeNet.prototxt', 'DehazeNet.caffemodel', caffe.TEST)
 	net_full_conv = caffe.Net('DehazeNetFcn.prototxt', 'DehazeNet.caffemodel', caffe.TEST)
 	net_full_conv.params['ip1-conv'][0].data.flat = net.params['ip1'][0].data.flat
