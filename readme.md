@@ -5,6 +5,7 @@ Bolun Cai, Xiangmin Xu, Kui Jia, Chunmei Qing, Dacheng Tao
 ## Requirement
 > * caffe 
 > * opencv2
+> * Python 2.7
 
 ## Usage:
 simply type 
