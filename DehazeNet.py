@@ -49,6 +49,19 @@ def Guidedfilter(im,p,r,eps):
     q = mean_a*im + mean_b
     return q
 
+def initial_setup():
+    caffe.set_mode_gpu()
+    caffe.set_device(0)
+    net = caffe.Net('DehazeNet.prototxt', 'DehazeNet.caffemodel', caffe.TEST)
+    net_full_conv = caffe.Net('DehazeNetFcn.prototxt', 'DehazeNet.caffemodel', caffe.TEST)
+    net_full_conv.params['ip1-conv'][0].data.flat = net.params['ip1'][0].data.flat
+    net_full_conv.params['ip1-conv'][1].data[...] = net.params['ip1'][1].data
+    npad = ((7,8), (7,8), (0,0))
+    transformers = caffe.io.Transformer({'data': net_full_conv.blobs['data'].data.shape})
+    transformers.set_transpose('data', (2,0,1))
+    transformers.set_channel_swap('data', (2,1,0))
+    return npad, net_full_conv, transformers 
+
 def TransmissionRefine(im,et):
     gray = cv2.cvtColor(im,cv2.COLOR_BGR2GRAY)
     gray = np.float64(gray)/255
@@ -63,6 +76,14 @@ def Recover(im,t,A,tx = 0.1):
     for ind in range(0,3):
         res[:,:,ind] = (im[:,:,ind]-A[0,ind])/t + A[0,ind]
     return res
+
+def TransmissionEstimate(npad, net_full_conv, transformers, im_path, height, width):
+    im = caffe.io.load_image(im_path)
+    im = np.pad(im, npad, 'symmetric')
+    out = net_full_conv.forward_all(data=np.array([transformers.preprocess('data', im-0.2)]))
+    transmission = np.reshape(out['ip1-conv'], (height,width))
+    return transmission
+
 
 if __name__ == '__main__':
     if not len(sys.argv) == 2:
